@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Transformation Visualizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        #loading-bar {
+            width: 100%;
+            background: #e0e0e0;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        #loading-progress {
+            width: 0%;
+            height: 5px;
+            background: #4a6bff;
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+        :root {
+            --primary: #4a6bff;
+            --primary-dark: #3a56cc;
+            --secondary: #ff6b6b;
+            --dark: #2d3748;
+            --light: #f7fafc;
+            --gray: #e2e8f0;
+            --dark-gray: #718096;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background-color: var(--light);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        header {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 100;
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        .main-content {
+            padding: 180px 0 80px;
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .page-header h1 {
+            font-size: 36px;
+            color: var(--dark);
+            margin-bottom: 15px;
+        }
+        
+        .page-header p {
+            color: var(--dark-gray);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .visualization-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+        
+        .form-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .form-title {
+            font-size: 22px;
+            margin-bottom: 25px;
+            color: var(--dark);
+            text-align: center;
+        }
+        
+        .matrix-input {
+            margin-bottom: 30px;
+        }
+        
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .matrix-cell {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .matrix-cell label {
+            font-size: 14px;
+            color: var(--dark-gray);
+            margin-bottom: 5px;
+        }
+        
+        .matrix-cell input {
+            padding: 10px;
+            border: 1px solid var(--gray);
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .vector-input {
+            margin-bottom: 30px;
+        }
+        
+        .vector-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .quality-selector {
+            margin-bottom: 30px;
+        }
+        
+        .quality-options {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .quality-option {
+            flex: 1;
+        }
+        
+        .quality-option input {
+            display: none;
+        }
+        
+        .quality-option label {
+            display: block;
+            padding: 10px;
+            background-color: var(--gray);
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .quality-option input:checked + label {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .result-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .video-placeholder {
+            width: 100%;
+            height: 300px;
+            background-color: var(--gray);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .video-placeholder video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .result-info {
+            width: 100%;
+        }
+        
+        .result-matrix, .result-vector {
+            margin-bottom: 20px;
+        }
+        
+        .result-title {
+            font-size: 16px;
+            color: var(--dark-gray);
+            margin-bottom: 5px;
+        }
+        
+        .result-value {
+            font-family: 'Source Code Pro', monospace;
+            background-color: var(--gray);
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 30px 0 15px;
+            text-align: center;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .footer-links a {
+            color: var(--gray);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: white;
+        }
+        
+        .copyright {
+            color: var(--dark-gray);
+            font-size: 14px;
+        }
+    </style>
+    <script src="/static/mathjax/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <a href="/" class="logo">We Love Linear Algebra</a>
+                <div class="nav-links">
+                    <a href="/">Home</a>
+                    <a href="/transform">Transformations</a>
+                    <a href="/change">Change of Basis</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1>Matrix Transformation Visualizer</h1>
+                <p>Enter a 2×2 transformation matrix and a 2D vector to visualize how the matrix transforms the vector.</p>
+            </div>
+
+            <div class="visualization-container">
+                <div class="form-container">
+                    <h2 class="form-title">Input Parameters</h2>
+                    <form id="transformation-form">
+                        <div class="matrix-input">
+                            <h3>Transformation Matrix</h3>
+                            <div class="matrix-grid">
+                                <div class="matrix-cell">
+                                    <label for="m00">m<sub>00</sub></label>
+                                    <input type="number" id="m00" name="m00" step="any" value="1" required>
+                                </div>
+                                <div class="matrix-cell">
+                                    <label for="m01">m<sub>01</sub></label>
+                                    <input type="number" id="m01" name="m01" step="any" value="0" required>
+                                </div>
+                                <div class="matrix-cell">
+                                    <label for="m10">m<sub>10</sub></label>
+                                    <input type="number" id="m10" name="m10" step="any" value="0" required>
+                                </div>
+                                <div class="matrix-cell">
+                                    <label for="m11">m<sub>11</sub></label>
+                                    <input type="number" id="m11" name="m11" step="any" value="1" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="vector-input">
+                            <h3>Input Vector</h3>
+                            <div class="vector-grid">
+                                <div class="matrix-cell">
+                                    <label for="v0">x-component</label>
+                                    <input type="number" id="v0" name="v0" step="any" value="1" required>
+                                </div>
+                                <div class="matrix-cell">
+                                    <label for="v1">y-component</label>
+                                    <input type="number" id="v1" name="v1" step="any" value="1" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="quality-selector">
+                            <h3>Animation Quality</h3>
+                            <div class="quality-options">
+                                <div class="quality-option">
+                                    <input type="radio" id="ql" name="quality" value="ql" checked>
+                                    <label for="ql">Low</label>
+                                </div>
+                                <div class="quality-option">
+                                    <input type="radio" id="qm" name="quality" value="qm">
+                                    <label for="qm">Medium</label>
+                                </div>
+                                <div class="quality-option">
+                                    <input type="radio" id="qh" name="quality" value="qh">
+                                    <label for="qh">High</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn">Generate Transformation</button>
+                    </form>
+                </div>
+
+                <div class="result-container">
+                    <div class="video-placeholder">
+                        <video id="result-video" controls style="display: none;"></video>
+                        <p id="placeholder-text">Your visualization will appear here</p>
+                    </div>
+                    <div class="result-info">
+                        <div class="result-matrix">
+                            <p class="result-title">Transformation Result:</p>
+                            <p class="result-value" id="result-matrix" style="text-align: center;"></p>
+                        </div>
+                    </div>
+                    <div id="loading-bar">
+                        <div id="loading-progress"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="/">Home</a>
+                <a href="/transform">Transformations</a>
+                <a href="/change">Change of Basis</a>
+                <a href="#">About</a>
+            </div>
+            <p class="copyright">© 2023 Linear Algebra Visualizer. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all DOM elements
+            const form = document.getElementById('transformation-form');
+            const placeholder = document.getElementById('placeholder-text');
+            const videoElement = document.getElementById('result-video');
+            const loadingBar = document.getElementById('loading-bar');
+            const progressBar = document.getElementById('loading-progress');
+            const resultMatrix = document.getElementById('result-matrix');
+            
+            // Animation control
+            let progressAnimationId;
+            let progress = 0;
+            
+            // Form submission handler
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Reset UI state
+                resetLoadingUI();
+                
+                // Start loading animation
+                startLoadingAnimation();
+                
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch('/generate', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        const text = await response.text();
+                        throw new Error(`HTTP ${response.status}: ${text}`);
+                    }
+                    
+                    const data = await response.json();
+                    updateResultUI(data);
+                    
+                } catch (error) {
+                    showError(error);
+                } finally {
+                    completeLoading();
+                }
+            });
+            
+            function resetLoadingUI() {
+                placeholder.textContent = 'Generating visualization...';
+                videoElement.style.display = 'none';
+                videoElement.src = '';
+                resultMatrix.textContent = '';
+                loadingBar.style.display = 'block';
+                progress = 0;
+                progressBar.style.width = '0%';
+            }
+            
+            function startLoadingAnimation() {
+                function animate() {
+                    progress += Math.random() * 5;
+                    if (progress < 90) {
+                        progressBar.style.width = `${progress}%`;
+                        progressAnimationId = requestAnimationFrame(animate);
+                    }
+                }
+                animate();
+            }
+            
+            function updateResultUI(data) {
+                // Cancel the loading animation
+                cancelAnimationFrame(progressAnimationId);
+                progressBar.style.width = '100%';
+                
+                // Update the matrix result
+                const [[a, b], [c, d]] = data.matrix;
+                const [x1, x2] = data.vector;
+                const r1 = a * x1 + b * x2;
+                const r2 = c * x1 + d * x2;
+                
+                resultMatrix.innerHTML = `
+                    \\[
+                    \\begin{bmatrix}
+                    ${a} & ${b} \\\\
+                    ${c} & ${d}
+                    \\end{bmatrix}
+                    \\begin{bmatrix}
+                    ${x1} \\\\
+                    ${x2}
+                    \\end{bmatrix}
+                    =
+                    \\begin{bmatrix}
+                    ${r1} \\\\
+                    ${r2}
+                    \\end{bmatrix}
+                    \\]
+                `;
+                if (window.MathJax && MathJax.typesetPromise) {
+                    MathJax.typesetPromise();
+                }
+                
+                // Load the video
+                const videoURL = `/video?uid=${data.uid}&t=${Date.now()}`;
+                videoElement.src = videoURL;
+                videoElement.style.display = 'block';
+                placeholder.style.display = 'none';
+                videoElement.load();
+
+                // Once it's ready, stop polling
+                videoElement.onloadeddata = () => {
+                    clearInterval(check);  // ✅ Stop /status polling
+                };
+            }
+            
+            function showError(error) {
+                console.error('Error:', error);
+                cancelAnimationFrame(progressAnimationId);
+                placeholder.textContent = 'Error generating visualization. Please try again.';
+                placeholder.style.display = 'block';
+                progressBar.style.width = '0%';
+            }
+            
+            function completeLoading() {
+                setTimeout(() => {
+                    loadingBar.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingBar.style.display = 'none';
+                        loadingBar.style.opacity = '1';
+                    }, 300);
+                }, 500);
+            }
+        });
+    </script>
+    <script>
+    let check = setInterval(() => {
+        fetch('/status').catch(() => {
+            clearInterval(check);
+            window.open('', '_self');
+            window.close();
+        });
+    }, 2000);
+    </script>
+</body>
+</html>
